@@ -1,0 +1,11 @@
+/Users/eignatik/csharp/consoleproject/bin/Debug/netcoreapp3.1/consoleproject
+/Users/eignatik/csharp/consoleproject/bin/Debug/netcoreapp3.1/consoleproject.deps.json
+/Users/eignatik/csharp/consoleproject/bin/Debug/netcoreapp3.1/consoleproject.runtimeconfig.json
+/Users/eignatik/csharp/consoleproject/bin/Debug/netcoreapp3.1/consoleproject.runtimeconfig.dev.json
+/Users/eignatik/csharp/consoleproject/bin/Debug/netcoreapp3.1/consoleproject.dll
+/Users/eignatik/csharp/consoleproject/bin/Debug/netcoreapp3.1/consoleproject.pdb
+/Users/eignatik/csharp/consoleproject/obj/Debug/netcoreapp3.1/consoleproject.csprojAssemblyReference.cache
+/Users/eignatik/csharp/consoleproject/obj/Debug/netcoreapp3.1/consoleproject.AssemblyInfoInputs.cache
+/Users/eignatik/csharp/consoleproject/obj/Debug/netcoreapp3.1/consoleproject.AssemblyInfo.cs
+/Users/eignatik/csharp/consoleproject/obj/Debug/netcoreapp3.1/consoleproject.dll
+/Users/eignatik/csharp/consoleproject/obj/Debug/netcoreapp3.1/consoleproject.pdb
