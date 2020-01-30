@@ -11,24 +11,25 @@ using System.IO;
 namespace consoleproject {
    class Program {
     
-    // Regular expressions pattern for matching all files with rates.
-    private static String xmlFilesPattern = @"c\d+z\d+\.xml";
-    // Regular expressions pattern for matching all dates from files directory.
-    private static String datePattern = @"\d+-\d+-\d+";
-    // Regular expression object to be used for matching the corresponding pattern. See xmlFilesPattern(String)
-    private static Regex fileNameRegex = new Regex(xmlFilesPattern);
-    // Regular expression object to be used for matching the corresponding pattern. See datePattern(String).
-    private static Regex dateRegex = new Regex(datePattern);
     // Base URL that is a root for XML files to be parsed.
-    private static String baseUrlForXml = @"http://www.nbp.pl/kursy/xml/";
-    
+    private static readonly String BASE_URL_FOR_XML = @"http://www.nbp.pl/kursy/xml/";
     // Relative xPath for currency code.
-    private static String CURRENCY_CODE_ATTRIBUTE = @"kod_waluty";
+    private static readonly String CURRENCY_CODE_ATTRIBUTE = @"kod_waluty";
     // Relative xPath for buying rate.
-    private static String BUYING_RATE_ATTRIBUTE = @"kurs_kupna";
+    private static readonly String BUYING_RATE_ATTRIBUTE = @"kurs_kupna";
     // Relative xPath for selling rate.
-    private static String SELLING_RATE_ATTRIBUTE = @"kurs_sprzedazy";
-
+    private static readonly String SELLING_RATE_ATTRIBUTE = @"kurs_sprzedazy";
+    // Regular expressions pattern for matching all files with rates.
+    private static readonly String XML_FILE_PATTERN = @"c\d+z\d+\.xml";
+    // Regular expressions pattern for matching all dates from files directory.
+    private static readonly String DATE_PATTERN = @"\d+-\d+-\d+";
+    // Regular expression object to be used for matching the corresponding pattern. See xmlFilesPattern(String)
+    private static Regex fileNameRegex = new Regex(XML_FILE_PATTERN);
+    // Regular expression object to be used for matching the corresponding pattern. See datePattern(String).
+    private static Regex dateRegex = new Regex(DATE_PATTERN);
+    // Use this flag to have a debug output.
+    private static bool debugFlag = false;
+   
     //TODO: pass start and end date as arguments or enter from console.
     //TODO: pass curency code from console/arguments (allowed codes are USD, EUR, CHF, GBP, but in fact it already works with everything).
     //TODO: decompose this class to small ones (otherwice it's just a God class with lots of constants and methods).
@@ -38,16 +39,26 @@ namespace consoleproject {
         // DEFAULTS: 
         var currencyCode = @"USD";
         DateTime startDate = DateTime.Parse("2015-12-28");
-        DateTime endDate = DateTime.Parse("2015-12-28");
+        DateTime endDate = DateTime.Parse("2016-01-01");
 
         analyzeCurrency(startDate, endDate, currencyCode);
     }
 
     static void analyzeCurrency(DateTime startDate, DateTime endDate, String currencyCode) {
         List<String> filteredFiles = collectFilesForDates(startDate, endDate);
+        if (filteredFiles.Count == 0) {
+            Console.WriteLine("For given dates startDate={0}, endDate={1} files not found.", startDate, endDate);
+            return;
+        }
         List<Rate> allRates = new List<Rate>();
-        foreach (var file in filteredFiles) {
-            allRates.AddRange(parseRates(baseUrlForXml + file, currencyCode));
+        using (var client = new WebClient()) {
+            foreach (var file in filteredFiles) {
+                allRates.AddRange(parseRates(BASE_URL_FOR_XML + file, currencyCode, client));
+            }
+        }
+        if (allRates.Count == 0) {
+            Console.WriteLine("No values were parsed.");
+            return;
         }
         RateDetails rateDetails = produceRateDetails(allRates, currencyCode);
         displayResults(rateDetails);
@@ -76,10 +87,12 @@ namespace consoleproject {
         return filteredFiles;
     }
 
-    private static List<Rate> parseRates(String xmlFileUrl, String currencyCode) {
+    private static List<Rate> parseRates(String xmlFileUrl, String currencyCode, WebClient client) {
         List<Rate> rates = new List<Rate>();
-        var client = new WebClient();
         try {
+            if (debugFlag) {
+                Console.WriteLine("Requesting file {0}", xmlFileUrl);
+            }
             var page = client.DownloadData(xmlFileUrl);
             var xml = Encoding.GetEncoding("ISO-8859-1").GetString(page);
             var doc = new XmlDocument();
@@ -91,10 +104,18 @@ namespace consoleproject {
                         continue;
                     }
                     var rate = new Rate() {
-                                BuyValue = Double.Parse(node.SelectSingleNode(BUYING_RATE_ATTRIBUTE).InnerText, NumberStyles.Any, new CultureInfo("en-Us")),
-                                SellValue = Double.Parse(node.SelectSingleNode(SELLING_RATE_ATTRIBUTE).InnerText, NumberStyles.Any, new CultureInfo("en-Us")),
+                                BuyValue = Double.Parse(
+                                    node.SelectSingleNode(BUYING_RATE_ATTRIBUTE).InnerText.Replace(",", "."), 
+                                    NumberStyles.Any, 
+                                    CultureInfo.InvariantCulture),
+                                SellValue = Double.Parse(node.SelectSingleNode(SELLING_RATE_ATTRIBUTE).InnerText.Replace(",", "."), 
+                                NumberStyles.Any, 
+                                CultureInfo.InvariantCulture),
                                 CurrencyCode = node.SelectSingleNode(CURRENCY_CODE_ATTRIBUTE).InnerText
                             };
+                    if (debugFlag) {
+                        Console.WriteLine("Created rate=BuyValue={0}, SellValue={1}, CurrencyCode={2}", rate.BuyValue, rate.SellValue, rate.CurrencyCode);
+                    }
                     rates.Add(rate);
                 }
             } else {
